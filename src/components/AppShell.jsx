@@ -1,8 +1,22 @@
 "use client";
 import { useState } from "react";
-import NavLink from "./NavLink";
-import { Menu, X, LayoutGrid, ShoppingCart, PlusCircle, LogIn } from "lucide-react";
 import Link from "next/link";
+import NavLink from "./NavLink";
+import {
+  Menu,
+  X,
+  LayoutGrid,
+  ShoppingCart,
+  PlusCircle,
+  LogIn,
+  Wrench,
+  FilePlus,
+  Boxes,
+  PackagePlus,
+  Shield,
+  Users,
+  UserPlus
+} from "lucide-react";
 
 export default function AppShell({ children }) {
   const [open, setOpen] = useState(false);
@@ -54,9 +68,35 @@ export default function AppShell({ children }) {
           ].join(" ")}
         >
           <nav className="space-y-1">
+            {/* Dashboard */}
             <NavLink href="/" icon={LayoutGrid}>Dashboard</NavLink>
+
+            {/* Carts */}
+            <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/carts" icon={ShoppingCart}>Carts</NavLink>
             <NavLink href="/carts/new" icon={PlusCircle}>Add Cart</NavLink>
+
+            {/* Service */}
+            <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/service" icon={Wrench}>Service Orders</NavLink>
+            <NavLink href="/service/new" icon={FilePlus}>New Service Order</NavLink>
+
+            {/* Parts */}
+            <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/parts" icon={Boxes}>Parts</NavLink>
+            <NavLink href="/parts/new" icon={PackagePlus}>New Part</NavLink>
+
+            {/* Customers */}
+            <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/customers" icon={Users}>Customers</NavLink>
+            <NavLink href="/customers/new" icon={UserPlus}>New Customer</NavLink>
+
+            {/* Admin */}
+            <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/admin/roles" icon={Shield}>Admin · Roles</NavLink>
+
+            {/* Auth */}
+            <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/login" icon={LogIn}>Login</NavLink>
           </nav>
         </aside>
