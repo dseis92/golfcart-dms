@@ -10,26 +10,68 @@ import {
   query,
   orderBy,
   onSnapshot as onSnapshotCol,
-  setDoc
+  setDoc,
+  updateDoc
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ChevronLeft, UploadCloud } from "lucide-react";
 import PhotoGrid from "@/components/PhotoGrid";
 import ServiceOrdersForCart from "@/components/ServiceOrdersForCart";
 
+function fmtDateTime(iso) {
+  try {
+    return iso ? new Date(iso).toLocaleString() : "-";
+  } catch {
+    return "-";
+  }
+}
+
+function since(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const ms = Date.now() - d.getTime();
+  if (ms < 0) return "just now";
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  return `${weeks}w ago`;
+}
+
 export default function CartDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+
   const [cart, setCart] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
+  // Charging form local state
+  const [soc, setSoc] = useState("");
+  const [lastChargeAt, setLastChargeAt] = useState("");
+  const [voltage, setVoltage] = useState("");
+  const [chemistry, setChemistry] = useState("lithium"); // 'lithium' | 'lead_acid'
+  const [savingCharge, setSavingCharge] = useState(false);
+  const isElectric = (cart?.powerType || "").toLowerCase() === "electric";
+
   // Live cart doc
   useEffect(() => {
     if (!id) return;
     const unsub = onSnapshot(doc(db, "carts", id), (snap) => {
-      setCart(snap.exists() ? snap.data() : false);
+      const data = snap.exists() ? snap.data() : false;
+      setCart(data);
+      if (data && data.batteryPack) {
+        const bp = data.batteryPack;
+        setSoc(bp.socPercent ?? "");
+        setLastChargeAt(bp.lastChargeAt ?? "");
+        setVoltage(bp.voltage ?? "");
+        setChemistry(bp.chemistry ?? "lithium");
+      }
     });
     return () => unsub();
   }, [id]);
@@ -52,7 +94,9 @@ export default function CartDetailPage() {
       { label: "Year", value: cart.year ?? "-" },
       { label: "Power", value: cart.powerType },
       { label: "Status", value: cart.status },
-      { label: "Location", value: cart.location ?? "-" }
+      { label: "Location", value: cart.location ?? "-" },
+      { label: "Created", value: fmtDateTime(cart.createdAt) },
+      { label: "Updated", value: fmtDateTime(cart.updatedAt) }
     ];
   }, [cart]);
 
@@ -85,6 +129,37 @@ export default function CartDetailPage() {
     }
   }
 
+  async function saveCharging(e) {
+    e?.preventDefault?.();
+    setSavingCharge(true);
+    setError("");
+    try {
+      const payload = {
+        "batteryPack.socPercent": soc === "" ? null : Number(soc),
+        "batteryPack.lastChargeAt": lastChargeAt || null,
+        "batteryPack.voltage": voltage === "" ? null : Number(voltage),
+        "batteryPack.chemistry": chemistry || null,
+        updatedAt: new Date().toISOString()
+      };
+      await updateDoc(doc(db, "carts", id), payload);
+    } catch (err) {
+      console.error(err);
+      setError(err?.message || "Failed to save charging info");
+    } finally {
+      setSavingCharge(false);
+    }
+  }
+
+  function setChargedNow() {
+    const nowIso = new Date().toISOString();
+    setLastChargeAt(nowIso);
+  }
+
+  function adjustSoc(delta) {
+    const n = Math.max(0, Math.min(100, Number(soc || 0) + delta));
+    setSoc(n);
+  }
+
   if (cart === null) {
     return (
       <div className="page">
@@ -110,6 +185,9 @@ export default function CartDetailPage() {
     );
   }
 
+  const bp = cart.batteryPack || {};
+  const lastChargePretty = bp.lastChargeAt ? `${fmtDateTime(bp.lastChargeAt)} (${since(bp.lastChargeAt)})` : "-";
+
   return (
     <div className="page space-y-8">
       {/* Header */}
@@ -122,7 +200,7 @@ export default function CartDetailPage() {
             <ChevronLeft className="h-4 w-4" /> Back
           </button>
           <h1 className="mt-2 text-2xl font-semibold">Cart {cart.id}</h1>
-          <p className="text-sm text-zinc-600">Detailed specs, photos, and service history.</p>
+          <p className="text-sm text-zinc-600">Detailed specs, photos, charging, and service history.</p>
         </div>
         <div className="flex gap-2">
           <Link href="/carts" className="rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50">All Carts</Link>
@@ -130,7 +208,7 @@ export default function CartDetailPage() {
         </div>
       </div>
 
-      {/* Info + Upload + Service Orders */}
+      {/* Info + Photos */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Details */}
         <div className="card p-6 lg:col-span-1">
@@ -168,6 +246,107 @@ export default function CartDetailPage() {
             <PhotoGrid photos={photos} />
           </div>
         </div>
+      </div>
+
+      {/* Charging section (only useful for electric carts, but editable for any) */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-800">Charging</h2>
+          {isElectric ? (
+            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Electric</span>
+          ) : (
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700">Gas</span>
+          )}
+        </div>
+
+        {/* Readout */}
+        <div className="mt-3 grid gap-4 sm:grid-cols-4">
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase text-zinc-500">State of Charge</div>
+            <div className="mt-1 text-2xl font-semibold">{bp.socPercent ?? "-"}<span className="text-base font-medium">%</span></div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase text-zinc-500">Last Charged</div>
+            <div className="mt-1 text-sm font-medium">{lastChargePretty}</div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase text-zinc-500">Voltage</div>
+            <div className="mt-1 text-2xl font-semibold">{bp.voltage ?? "-"}<span className="text-base font-medium">V</span></div>
+          </div>
+          <div className="rounded-lg border p-4">
+            <div className="text-xs uppercase text-zinc-500">Chemistry</div>
+            <div className="mt-1 text-sm font-medium capitalize">{bp.chemistry ?? "-"}</div>
+          </div>
+        </div>
+
+        {/* Editor */}
+        <form onSubmit={saveCharging} className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label className="mb-1 block text-sm">State of Charge (%)</label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                className="input-like"
+                value={soc}
+                onChange={(e) => setSoc(e.target.value)}
+                placeholder="e.g. 80"
+              />
+              <div className="flex gap-1">
+                <button type="button" className="rounded-lg border px-2 py-1 text-sm hover:bg-zinc-50" onClick={() => adjustSoc(-5)}>-5</button>
+                <button type="button" className="rounded-lg border px-2 py-1 text-sm hover:bg-zinc-50" onClick={() => adjustSoc(+5)}>+5</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm">Last Charged At (ISO or leave blank)</label>
+            <div className="flex gap-2">
+              <input
+                className="input-like"
+                value={lastChargeAt}
+                onChange={(e) => setLastChargeAt(e.target.value)}
+                placeholder={new Date().toISOString()}
+              />
+              <button
+                type="button"
+                className="rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50"
+                onClick={setChargedNow}
+              >
+                Now
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">Tip: paste ISO like {new Date().toISOString().slice(0, 19)}Z or use “Now”.</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm">Battery Voltage (V)</label>
+            <input
+              type="number"
+              className="input-like"
+              value={voltage}
+              onChange={(e) => setVoltage(e.target.value)}
+              placeholder="48"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm">Chemistry</label>
+            <select
+              className="input-like"
+              value={chemistry}
+              onChange={(e) => setChemistry(e.target.value)}
+            >
+              <option value="lithium">Lithium</option>
+              <option value="lead_acid">Lead acid</option>
+            </select>
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-4">
+            <button className="btn" disabled={savingCharge}>{savingCharge ? "Saving…" : "Save charging info"}</button>
+          </div>
+        </form>
       </div>
 
       {/* Service orders for this cart */}
