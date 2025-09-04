@@ -1,70 +1,69 @@
 "use client";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import ServiceBoardCard from "@/components/ServiceBoardCard";
 
-function StatusBadge({ status }) {
-  const map = {
-    open: "bg-amber-100 text-amber-800",
-    in_progress: "bg-blue-100 text-blue-700",
-    completed: "bg-green-100 text-green-700"
-  };
-  return (
-    <span className={`rounded-full px-2 py-1 text-xs font-medium ${map[status] || "bg-zinc-100 text-zinc-700"}`}>
-      {status.replace("_", " ")}
-    </span>
-  );
-}
+const COLUMNS = [
+  { key: "intake", label: "Intake" },
+  { key: "estimate", label: "Estimate" },
+  { key: "approved", label: "Approved" },
+  { key: "in_progress", label: "In Progress" },
+  { key: "waiting_parts", label: "Waiting Parts" },
+  { key: "ready", label: "Ready" },
+  { key: "delivered", label: "Delivered" }
+];
 
-export default function ServiceListPage() {
-  const [orders, setOrders] = useState(null);
+export default function ServiceBoardPage() {
+  const [rows, setRows] = useState(null);
 
   useEffect(() => {
-    const q = query(collection(db, "serviceOrders"), orderBy("openedAt", "desc"));
-    const unsub = onSnapshot(q, (snap) => setOrders(snap.docs.map((d) => d.data())));
+    const q = query(collection(db, "workOrders"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      setRows(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
     return () => unsub();
   }, []);
 
+  const grouped = useMemo(() => {
+    const map = Object.fromEntries(COLUMNS.map(c => [c.key, []]));
+    (rows || []).forEach(wo => {
+      const k = COLUMNS.some(c => c.key === wo.status) ? wo.status : "intake";
+      map[k].push(wo);
+    });
+    return map;
+  }, [rows]);
+
   return (
-    <div className="page space-y-6">
+    <div className="page space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Service Orders</h1>
-        <Link href="/service/new" className="btn">New Service Order</Link>
+        <h1 className="text-2xl font-semibold">Service Board</h1>
+        <Link href="/service/new" className="btn">New Work Order</Link>
       </div>
 
-      <div className="card overflow-x-auto">
-        {!orders ? (
-          <div className="p-4 text-sm text-zinc-600">Loading…</div>
-        ) : orders.length === 0 ? (
-          <div className="p-6 text-sm text-zinc-600">No service orders yet</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-zinc-50 text-left">
-                <th className="p-3">ID</th>
-                <th className="p-3">Cart</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Opened</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} className="border-t">
-                  <td className="p-3 font-medium">{o.id}</td>
-                  <td className="p-3">{o.cartId}</td>
-                  <td className="p-3"><StatusBadge status={o.status} /></td>
-                  <td className="p-3">{new Date(o.openedAt).toLocaleString()}</td>
-                  <td className="p-3 text-right">
-                    <Link href={`/service/${o.id}`} className="text-zinc-700 underline hover:text-zinc-900">Open</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {!rows ? (
+        <div className="text-sm text-zinc-600">Loading…</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-7">
+          {COLUMNS.map(col => (
+            <div key={col.key} className="card p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">{col.label}</h3>
+                <span className="text-xs text-zinc-500">{grouped[col.key].length}</span>
+              </div>
+              <div className="space-y-2">
+                {grouped[col.key].map(wo => (
+                  <ServiceBoardCard key={wo.id} wo={wo} />
+                ))}
+                {grouped[col.key].length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-3 text-center text-xs text-zinc-500">No items</div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

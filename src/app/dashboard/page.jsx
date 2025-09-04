@@ -1,9 +1,12 @@
 "use client";
 import Link from "next/link";
-import { LayoutGrid, List, PlusCircle, Wrench, Boxes, Users, ScanLine } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
+import { LayoutGrid, BatteryCharging, List, Wrench } from "lucide-react";
 
-function Stat({ label, value, hint }) {
-  return (
+function StatCard({ label, value, hint, href }) {
+  const content = (
     <div className="card h-full">
       <div className="px-4 pt-3">
         <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
@@ -14,9 +17,39 @@ function Stat({ label, value, hint }) {
       </div>
     </div>
   );
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 export default function DashboardPage() {
+  const [carts, setCarts] = useState(null);
+  const [bays, setBays] = useState(null);
+  const [queue, setQueue] = useState(null);
+
+  useEffect(() => {
+    const uc = onSnapshot(collection(db, "carts"), (snap) => {
+      setCarts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    const ub = onSnapshot(collection(db, "chargingBays"), (snap) => {
+      setBays(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    const uq = onSnapshot(collection(db, "chargeQueue"), (snap) => {
+      setQueue(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => { uc(); ub(); uq(); };
+  }, []);
+
+  const counts = useMemo(() => {
+    const byStatus = { available: 0, in_service: 0, ready: 0 };
+    (carts || []).forEach(c => {
+      if (c.status === "available") byStatus.available++;
+      if (c.status === "in_service") byStatus.in_service++;
+      if (c.status === "ready") byStatus.ready++;
+    });
+    const baysInUse = (bays || []).filter(b => !!b.currentCartId).length;
+    const queueLen = (queue || []).length;
+    return { ...byStatus, baysInUse, queueLen };
+  }, [carts, bays, queue]);
+
   return (
     <div className="page space-y-6">
       {/* Header */}
@@ -28,26 +61,21 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold">Dashboard</h1>
         </div>
         <div className="flex gap-2">
-          <Link href="/inventory/new" className="btn btn-primary">
-            <PlusCircle className="h-4 w-4" />
-            Add Cart
-          </Link>
-          <Link href="/service/new" className="btn">
-            <Wrench className="h-4 w-4" />
-            New Service
-          </Link>
+          <Link href="/inventory/new" className="btn btn-primary">Add Cart</Link>
+          <Link href="/service/new" className="btn">New Service</Link>
         </div>
       </div>
 
-      {/* Quick stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Stat label="Carts in Stock" value="—" hint="Live from Firestore list" />
-        <Stat label="In Service" value="—" hint="Active service orders" />
-        <Stat label="Low Parts" value="—" hint="Below min stock" />
-        <Stat label="Customers" value="—" hint="CRM total" />
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-5">
+        <StatCard label="Available" value={counts.available ?? "—"} href="/inventory" />
+        <StatCard label="In Service" value={counts.in_service ?? "—"} href="/service" />
+        <StatCard label="Ready" value={counts.ready ?? "—"} href="/inventory" />
+        <StatCard label="Bays In Use" value={counts.baysInUse ?? "—"} href="/charging" />
+        <StatCard label="Queue Length" value={counts.queueLen ?? "—"} href="/charging" />
       </div>
 
-      {/* Primary sections */}
+      {/* Shortcuts */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="card">
           <div className="flex items-center justify-between p-4">
@@ -57,22 +85,10 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Inventory</p>
-                <p className="text-xs text-zinc-500">Search, filter, and manage carts</p>
+                <p className="text-xs text-zinc-500">Search, filter, manage carts</p>
               </div>
             </div>
             <Link href="/inventory" className="btn">Open</Link>
-          </div>
-          <div className="border-t p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Link href="/inventory/new" className="btn btn-primary">
-                <PlusCircle className="h-4 w-4" />
-                Add Cart
-              </Link>
-              <Link href="/inventory" className="btn">
-                <ScanLine className="h-4 w-4" />
-                Scan / QR Labels
-              </Link>
-            </div>
           </div>
         </div>
 
@@ -84,63 +100,27 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm font-medium">Service</p>
-                <p className="text-xs text-zinc-500">Open, in-progress, closed orders</p>
+                <p className="text-xs text-zinc-500">Open, in-progress, ready</p>
               </div>
             </div>
             <Link href="/service" className="btn">Open</Link>
           </div>
-          <div className="border-t p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Link href="/service/new" className="btn btn-primary">
-                <PlusCircle className="h-4 w-4" />
-                New Service Order
-              </Link>
-              <Link href="/service" className="btn">View All</Link>
-            </div>
-          </div>
         </div>
 
-        <div className="card">
+        <div className="card md:col-span-2">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-2">
               <div className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100">
-                <Boxes className="h-4 w-4 text-zinc-700" />
+                <BatteryCharging className="h-4 w-4 text-zinc-700" />
               </div>
               <div>
-                <p className="text-sm font-medium">Parts</p>
-                <p className="text-xs text-zinc-500">Stock, bins, low inventory</p>
+                <p className="text-sm font-medium">Charging</p>
+                <p className="text-xs text-zinc-500">Bays and queue</p>
               </div>
             </div>
-            <Link href="/parts" className="btn">Open</Link>
-          </div>
-          <div className="border-t p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Link href="/parts/new" className="btn btn-primary">Add Part</Link>
-              <Link href="/parts" className="btn">View All</Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100">
-                <Users className="h-4 w-4 text-zinc-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Customers</p>
-                <p className="text-xs text-zinc-500">People and organizations</p>
-              </div>
-            </div>
-            <Link href="/customers" className="btn">Open</Link>
-          </div>
-          <div className="border-t p-4">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Link href="/customers/new" className="btn btn-primary">
-                <PlusCircle className="h-4 w-4" />
-                Add Customer
-              </Link>
-              <Link href="/customers" className="btn">View All</Link>
+            <div className="flex gap-2">
+              <Link href="/charging" className="btn">Operator</Link>
+              <Link href="/kiosk/charging" className="btn">Kiosk</Link>
             </div>
           </div>
         </div>

@@ -144,9 +144,12 @@ export default function InventoryDetailPage() {
           <h1 className="text-2xl font-semibold">Cart {cart.stockNo || cart.id}</h1>
           <p className="text-sm text-zinc-600">VIN: {cart.vin || "-"}</p>
         </div>
-        <div className="flex gap-2">
-          <Link href={`/inventory/${id}/qr`} className="rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50">QR Label</Link>
-          <Link href="/inventory" className="rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50">Back to Inventory</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/service/new?cartId=${encodeURIComponent(id)}`} className="btn btn-primary">
+            Create Work Order
+          </Link>
+          <Link href={`/inventory/${id}/qr`} className="btn">QR Label</Link>
+          <Link href="/inventory" className="btn">Back to Inventory</Link>
         </div>
       </div>
 
