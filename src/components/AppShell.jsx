@@ -3,19 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import NavLink from "./NavLink";
 import {
-  Menu,
-  X,
-  LayoutGrid,
-  ShoppingCart,
-  PlusCircle,
-  LogIn,
-  Wrench,
-  FilePlus,
-  Boxes,
-  PackagePlus,
-  Shield,
-  Users,
-  UserPlus
+  Menu, X, LayoutGrid, ShoppingCart, PlusCircle, LogIn,
+  Wrench, FilePlus, Boxes, PackagePlus, Shield, Users, UserPlus, List
 } from "lucide-react";
 
 export default function AppShell({ children }) {
@@ -43,9 +32,9 @@ export default function AppShell({ children }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/carts/new" className="btn hidden sm:inline-flex">
+            <Link href="/inventory/new" className="btn hidden sm:inline-flex">
               <PlusCircle className="mr-2 h-4 w-4" />
-              New Cart
+              Add Cart
             </Link>
             <Link href="/login" className="rounded-lg px-3 py-2 text-sm hover:bg-zinc-100">
               <span className="inline-flex items-center gap-2">
@@ -57,7 +46,7 @@ export default function AppShell({ children }) {
         </div>
       </header>
 
-      {/* Layout row */}
+      {/* Body grid */}
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[240px_1fr]">
         {/* Sidebar */}
         <aside
@@ -68,40 +57,34 @@ export default function AppShell({ children }) {
           ].join(" ")}
         >
           <nav className="space-y-1">
-            {/* Dashboard */}
             <NavLink href="/" icon={LayoutGrid}>Dashboard</NavLink>
 
-            {/* Carts */}
+            <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/inventory" icon={List}>Inventory</NavLink>
+            <NavLink href="/inventory/new" icon={PlusCircle}>Add Cart</NavLink>
+
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/carts" icon={ShoppingCart}>Carts</NavLink>
-            <NavLink href="/carts/new" icon={PlusCircle}>Add Cart</NavLink>
+            <NavLink href="/carts/new" icon={PlusCircle}>Add Cart (basic)</NavLink>
 
-            {/* Service */}
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/service" icon={Wrench}>Service Orders</NavLink>
             <NavLink href="/service/new" icon={FilePlus}>New Service Order</NavLink>
 
-            {/* Parts */}
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/parts" icon={Boxes}>Parts</NavLink>
             <NavLink href="/parts/new" icon={PackagePlus}>New Part</NavLink>
 
-            {/* Customers */}
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/customers" icon={Users}>Customers</NavLink>
             <NavLink href="/customers/new" icon={UserPlus}>New Customer</NavLink>
 
-            {/* Admin */}
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/admin/roles" icon={Shield}>Admin · Roles</NavLink>
-
-            {/* Auth */}
-            <div className="mt-3 mb-1 border-t pt-3" />
-            <NavLink href="/login" icon={LogIn}>Login</NavLink>
           </nav>
         </aside>
 
-        {/* Main content */}
+        {/* Main */}
         <main className="min-w-0">{children}</main>
       </div>
     </div>

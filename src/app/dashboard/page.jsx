@@ -1,156 +1,150 @@
-// src/app/dashboard/page.jsx
+"use client";
 import Link from "next/link";
-import {
-  Truck,
-  Wrench,
-  BatteryCharging,
-  AlertTriangle,
-  ChevronRight,
-  PlusCircle,
-  CalendarCheck,
-  Search
-} from "lucide-react";
+import { LayoutGrid, List, PlusCircle, Wrench, Boxes, Users, ScanLine } from "lucide-react";
 
-/** Small stat card used in the grid */
-function StatCard({ title, value, icon: Icon, href }) {
-  const body = (
-    <div className="card group relative overflow-hidden p-5 transition hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-zinc-500">{title}</p>
-          <p className="mt-2 text-3xl font-semibold text-zinc-900">{value}</p>
-        </div>
-        <div className="rounded-lg bg-zinc-900/90 p-2 text-white">
-          <Icon className="h-5 w-5" />
-        </div>
+function Stat({ label, value, hint }) {
+  return (
+    <div className="card h-full">
+      <div className="px-4 pt-3">
+        <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
       </div>
-      <div className="mt-4 flex items-center gap-1 text-sm text-zinc-600">
-        View details
-        <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+      <div className="px-4 pb-4 pt-1">
+        <div className="text-2xl font-semibold">{value}</div>
+        {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
       </div>
     </div>
   );
-
-  return href ? <Link href={href}>{body}</Link> : body;
 }
 
-/** Badge component for activity list */
-function ToneBadge({ tone = "zinc", children }) {
-  const tones = {
-    green: "bg-green-100 text-green-700",
-    blue: "bg-blue-100 text-blue-700",
-    red: "bg-red-100 text-red-700",
-    amber: "bg-amber-100 text-amber-800",
-    zinc: "bg-zinc-100 text-zinc-700"
-  };
+export default function DashboardPage() {
   return (
-    <span className={`text-xs font-medium px-2 py-1 rounded-full ${tones[tone] || tones.zinc}`}>
-      {children}
-    </span>
-  );
-}
-
-export default function Dashboard() {
-  // Placeholder stats; wire these to Firestore later
-  const stats = [
-    { title: "In Stock", value: 12, icon: Truck, href: "/carts" },
-    { title: "In Service", value: 7, icon: Wrench, href: "/carts" },
-    { title: "Charging", value: 5, icon: BatteryCharging, href: "/carts" },
-    { title: "Alerts", value: 3, icon: AlertTriangle, href: "/carts" }
-  ];
-
-  const activity = [
-    { title: "CART-104 added to inventory", meta: "2 hours ago", badge: "New", tone: "green" },
-    { title: "SO-302 completed", meta: "Yesterday", badge: "Service", tone: "blue" },
-    { title: "Battery pack low for CART-067", meta: "3 days ago", badge: "Alert", tone: "red" }
-  ];
-
-  return (
-    <div className="page space-y-8">
-      {/* Page header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-zinc-600">Overview of inventory and service activity.</p>
+    <div className="page space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-zinc-900 text-white">
+            <LayoutGrid className="h-4 w-4" />
+          </div>
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
         </div>
         <div className="flex gap-2">
-          <Link href="/carts/new" className="btn">
-            <PlusCircle className="mr-2 h-4 w-4" />
+          <Link href="/inventory/new" className="btn btn-primary">
+            <PlusCircle className="h-4 w-4" />
             Add Cart
           </Link>
-          <Link href="/carts" className="rounded-lg px-4 py-2 text-sm border bg-white hover:bg-zinc-50">
-            <Search className="mr-2 inline-block h-4 w-4" />
-            Browse
+          <Link href="/service/new" className="btn">
+            <Wrench className="h-4 w-4" />
+            New Service
           </Link>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((s) => (
-          <StatCard key={s.title} title={s.title} value={s.value} icon={s.icon} href={s.href} />
-        ))}
-      </section>
+      {/* Quick stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Stat label="Carts in Stock" value="—" hint="Live from Firestore list" />
+        <Stat label="In Service" value="—" hint="Active service orders" />
+        <Stat label="Low Parts" value="—" hint="Below min stock" />
+        <Stat label="Customers" value="—" hint="CRM total" />
+      </div>
 
-      {/* Two-column content: activity + quick actions */}
-      <section className="grid gap-6 lg:grid-cols-3">
-        {/* Recent activity */}
-        <div className="card overflow-hidden lg:col-span-2">
-          <div className="border-b px-5 py-4">
-            <h2 className="text-lg font-semibold">Recent Activity</h2>
+      {/* Primary sections */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="card">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100">
+                <List className="h-4 w-4 text-zinc-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Inventory</p>
+                <p className="text-xs text-zinc-500">Search, filter, and manage carts</p>
+              </div>
+            </div>
+            <Link href="/inventory" className="btn">Open</Link>
           </div>
-          <ul className="divide-y">
-            {activity.map((a, i) => (
-              <li key={i} className="flex items-center justify-between px-5 py-4">
-                <div>
-                  <p className="font-medium">{a.title}</p>
-                  <p className="text-sm text-zinc-500">{a.meta}</p>
-                </div>
-                <ToneBadge tone={a.tone}>{a.badge}</ToneBadge>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Quick actions */}
-        <div className="space-y-4">
-          <div className="card p-5">
-            <h3 className="text-sm font-semibold text-zinc-800">Quick Actions</h3>
-            <div className="mt-3 grid gap-2">
-              <Link href="/carts/new" className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50">
-                <span className="inline-flex items-center gap-2">
-                  <PlusCircle className="h-4 w-4 text-zinc-500" />
-                  New cart
-                </span>
-                <ChevronRight className="h-4 w-4 text-zinc-400" />
+          <div className="border-t p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href="/inventory/new" className="btn btn-primary">
+                <PlusCircle className="h-4 w-4" />
+                Add Cart
               </Link>
-              <Link href="/carts" className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50">
-                <span className="inline-flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-zinc-500" />
-                  View inventory
-                </span>
-                <ChevronRight className="h-4 w-4 text-zinc-400" />
-              </Link>
-              <Link href="/carts" className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm hover:bg-zinc-50">
-                <span className="inline-flex items-center gap-2">
-                  <CalendarCheck className="h-4 w-4 text-zinc-500" />
-                  Service schedule
-                </span>
-                <ChevronRight className="h-4 w-4 text-zinc-400" />
+              <Link href="/inventory" className="btn">
+                <ScanLine className="h-4 w-4" />
+                Scan / QR Labels
               </Link>
             </div>
           </div>
+        </div>
 
-          <div className="card p-5">
-            <h3 className="text-sm font-semibold text-zinc-800">Tips</h3>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-zinc-600">
-              <li>Use the sidebar to jump between Carts and Add Cart.</li>
-              <li>Login keeps your session so you see inventory instantly.</li>
-              <li>Wire the stat cards to Firestore when you’re ready.</li>
-            </ul>
+        <div className="card">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100">
+                <Wrench className="h-4 w-4 text-zinc-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Service</p>
+                <p className="text-xs text-zinc-500">Open, in-progress, closed orders</p>
+              </div>
+            </div>
+            <Link href="/service" className="btn">Open</Link>
+          </div>
+          <div className="border-t p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href="/service/new" className="btn btn-primary">
+                <PlusCircle className="h-4 w-4" />
+                New Service Order
+              </Link>
+              <Link href="/service" className="btn">View All</Link>
+            </div>
           </div>
         </div>
-      </section>
+
+        <div className="card">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100">
+                <Boxes className="h-4 w-4 text-zinc-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Parts</p>
+                <p className="text-xs text-zinc-500">Stock, bins, low inventory</p>
+              </div>
+            </div>
+            <Link href="/parts" className="btn">Open</Link>
+          </div>
+          <div className="border-t p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href="/parts/new" className="btn btn-primary">Add Part</Link>
+              <Link href="/parts" className="btn">View All</Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100">
+                <Users className="h-4 w-4 text-zinc-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Customers</p>
+                <p className="text-xs text-zinc-500">People and organizations</p>
+              </div>
+            </div>
+            <Link href="/customers" className="btn">Open</Link>
+          </div>
+          <div className="border-t p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Link href="/customers/new" className="btn btn-primary">
+                <PlusCircle className="h-4 w-4" />
+                Add Customer
+              </Link>
+              <Link href="/customers" className="btn">View All</Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

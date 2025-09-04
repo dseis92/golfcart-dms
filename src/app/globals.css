@@ -2,10 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Layout + tokens */
 :root { --container: 1100px; }
+
 .container-max { max-width: var(--container); }
-.input-like { @apply h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400; }
-.section { @apply space-y-3; }
 .page { @apply mx-auto container-max px-4 py-6; }
-.card { @apply rounded-xl border border-zinc-200 bg-white shadow-sm; }
-.btn { @apply inline-flex items-center justify-center rounded-md bg-black px-4 py-2 text-white text-sm hover:opacity-90 disabled:opacity-50; }
+.section { @apply space-y-3; }
+
+/* Inputs + buttons + cards */
+.input-like {
+  @apply h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm
+         focus:outline-none focus:ring-2 focus:ring-zinc-400;
+}
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm
+         text-zinc-900 hover:bg-zinc-100 transition-colors;
+}
+.btn-primary { @apply bg-zinc-900 text-white hover:bg-zinc-800 border-zinc-900; }
+.card { @apply rounded-xl border bg-white shadow-sm; }
