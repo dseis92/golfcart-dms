@@ -4,7 +4,7 @@ import Link from "next/link";
 import NavLink from "./NavLink";
 import {
   Menu, X, LayoutGrid, ShoppingCart, LogIn,
-  Wrench, FilePlus, Boxes, Shield, Users, List, BatteryCharging, PlusCircle
+  Wrench, FilePlus, Boxes, Shield, Users, List, BatteryCharging, PlusCircle, WrenchIcon
 } from "lucide-react";
 
 export default function AppShell({ children }) {
@@ -32,7 +32,6 @@ export default function AppShell({ children }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Keep Add Cart in top bar */}
             <Link href="/inventory/new" className="btn hidden sm:inline-flex">
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Cart
@@ -62,7 +61,6 @@ export default function AppShell({ children }) {
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/inventory" icon={List}>Inventory</NavLink>
-            {/* removed: Add Cart */}
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/charging" icon={BatteryCharging}>Charging</NavLink>
@@ -70,19 +68,19 @@ export default function AppShell({ children }) {
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/carts" icon={ShoppingCart}>Carts</NavLink>
-            {/* removed: Add Cart (basic) */}
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/service" icon={Wrench}>Service Orders</NavLink>
             <NavLink href="/service/new" icon={FilePlus}>New Service Order</NavLink>
 
             <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/tech" icon={WrenchIcon}>Tech Mode</NavLink>
+
+            <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/parts" icon={Boxes}>Parts</NavLink>
-            {/* removed: New Part (use button on /parts) */}
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/customers" icon={Users}>Customers</NavLink>
-            {/* removed: New Customer (use button on /customers) */}
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/admin/roles" icon={Shield}>Admin · Roles</NavLink>
