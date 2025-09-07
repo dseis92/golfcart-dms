@@ -4,7 +4,8 @@ import Link from "next/link";
 import NavLink from "./NavLink";
 import {
   Menu, X, LayoutGrid, ShoppingCart, LogIn,
-  Wrench, FilePlus, Boxes, Shield, Users, List, BatteryCharging, PlusCircle, WrenchIcon
+  Wrench, FilePlus, Boxes, Shield, Users, List,
+  BatteryCharging, PlusCircle, WrenchIcon, Calendar
 } from "lucide-react";
 
 export default function AppShell({ children }) {
@@ -46,9 +47,8 @@ export default function AppShell({ children }) {
         </div>
       </header>
 
-      {/* Body grid */}
+      {/* Body */}
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[240px_1fr]">
-        {/* Sidebar */}
         <aside
           className={[
             "lg:sticky lg:top-16 lg:h-[calc(100dvh-5rem)] lg:self-start",
@@ -61,6 +61,9 @@ export default function AppShell({ children }) {
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/inventory" icon={List}>Inventory</NavLink>
+
+            <div className="mt-3 mb-1 border-t pt-3" />
+            <NavLink href="/calendar" icon={Calendar}>Calendar</NavLink>
 
             <div className="mt-3 mb-1 border-t pt-3" />
             <NavLink href="/charging" icon={BatteryCharging}>Charging</NavLink>
@@ -87,7 +90,6 @@ export default function AppShell({ children }) {
           </nav>
         </aside>
 
-        {/* Main */}
         <main className="min-w-0">{children}</main>
       </div>
     </div>
