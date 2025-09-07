@@ -1,75 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Layout tokens */
-:root {
-  --container: 1120px;
+/* Navy Pro soft background */
+@layer base {
+  html, body { background: #eef2ff; }
 }
 
-html, body {
-  @apply bg-surface-soft text-text antialiased;
-}
-
-/* Page scaffolding */
+/* Helpers for non-AntD bits */
+:root { --container: 1120px; }
 .container-max { max-width: var(--container); }
 .page { @apply mx-auto container-max px-4 py-6; }
-.section { @apply space-y-3; }
+.card { @apply rounded-xl border bg-white shadow-sm; }
 
-/* Cards */
-.card {
-  @apply rounded-xl border border-surface-ring bg-surface shadow-card transition-shadow;
-}
-.card:hover { @apply shadow-hover; }
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-100 transition; }
+.btn-primary { @apply bg-[#1f3a8a] text-white border-[#1f3a8a] hover:bg-[#1e2f6e]; }
 
-/* Buttons */
-.btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg
-         border border-surface-ring bg-surface px-3 py-2 text-sm font-medium
-         text-text hover:bg-white hover:shadow-card transition;
-}
-.btn-primary {
-  @apply border-transparent bg-brand-600 text-text-onBrand hover:bg-brand-700;
-}
-.btn-ghost {
-  @apply border-transparent bg-transparent hover:bg-surface-strong;
-}
-.btn-danger {
-  @apply border-transparent bg-red-600 text-white hover:bg-red-700;
-}
-.btn:disabled { @apply opacity-60 pointer-events-none; }
-
-/* Inputs */
 .input-like {
-  @apply h-10 w-full rounded-lg border border-surface-ring bg-surface px-3 text-sm
-         placeholder:text-text-faint
-         focus:outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-300;
+  @apply h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm
+         placeholder:text-zinc-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300;
 }
-textarea.input-like { @apply min-h-[120px] py-2; }
-select.input-like { @apply pr-8; }
-
-/* Badges/Chips */
-.chip {
-  @apply inline-flex items-center rounded-full bg-surface-strong px-2.5 py-1 text-xs text-text-soft;
-}
-.chip-success { @apply bg-green-100 text-green-700; }
-.chip-warn    { @apply bg-amber-100 text-amber-800; }
-.chip-info    { @apply bg-blue-100 text-blue-700; }
-
-/* Tables */
-.table { @apply w-full text-sm; }
-.table thead th { @apply bg-surface-strong p-2 text-left font-semibold text-text-soft; }
-.table tbody td { @apply p-2 align-top; }
-.table tr + tr td { @apply border-t border-surface-ring; }
-
-/* Links */
-a { @apply text-brand-700 hover:underline; }
-
-/* Utility clusters */
-.header-title { @apply text-2xl font-semibold tracking-tight text-text; }
-.header-sub   { @apply text-sm text-text-soft; }
-
-/* Kiosk / full-bleed helper */
-.full-bleed { @apply mx-[calc(50%-50vw)] w-screen; }
