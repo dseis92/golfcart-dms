@@ -2,21 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Navy Pro soft background */
 @layer base {
-  html, body { background: #eef2ff; }
-}
-
-/* Helpers for non-AntD bits */
-:root { --container: 1120px; }
-.container-max { max-width: var(--container); }
-.page { @apply mx-auto container-max px-4 py-6; }
-.card { @apply rounded-xl border bg-white shadow-sm; }
-
-.btn { @apply inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm text-zinc-900 hover:bg-zinc-100 transition; }
-.btn-primary { @apply bg-[#1f3a8a] text-white border-[#1f3a8a] hover:bg-[#1e2f6e]; }
-
-.input-like {
-  @apply h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm
-         placeholder:text-zinc-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-300;
+  html, body { background: #fafafa; color: #0b0f19; }
 }

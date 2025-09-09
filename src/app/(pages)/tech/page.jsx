@@ -1,72 +1,115 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { useAuth } from "@/components/AuthProvider";
+import { db } from "@/lib/firebase";
+import { collection, query, where, orderBy } from "firebase/firestore";
+import { useFirestoreQuery } from "@/hooks/useFirestoreQuery";
 
 export default function TechHome() {
-  const [user, setUser] = useState(null);
-  const [jobs, setJobs] = useState(null);
-  const [error, setError] = useState("");
+  const { user, loading } = useAuth();
+  const [uid, setUid] = useState(null);
 
-  useEffect(() => onAuthStateChanged(auth, setUser), []);
+  useEffect(() => { setUid(user?.uid ?? null); }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-    // Avoid composite-index requirement by skipping orderBy here
-    const q = query(collection(db, "workOrders"), where("assignedTechUid", "==", user.uid));
-    const unsub = onSnapshot(
-      q,
-      snap => {
-        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Sort newest first client-side
-        list.sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
-        setJobs(list);
-        setError("");
-      },
-      err => {
-        console.error("tech home error:", err);
-        setError(err.message || "Failed to load");
-        setJobs([]);
-      }
+  const q = useMemo(() => {
+    if (!uid) return null;
+    return query(
+      collection(db, "workOrders"),
+      where("assignedTechUid", "==", uid),
+      orderBy("updatedAt", "desc")
     );
-    return () => unsub();
-  }, [user]);
+  }, [uid]);
+
+  const { data: jobs = [], loading: jobsLoading } = q ? useFirestoreQuery(q) : { data: [], loading: false };
+
+  if (loading) return <div className="page"><p>Loading…</p></div>;
+
+  if (!user) {
+    return (
+      <div className="page">
+        <div className="card p-6">
+          <h1 className="text-xl font-semibold mb-2">Technician Mode</h1>
+          <p className="text-sm text-zinc-600 mb-4">Sign in to view your assigned work orders.</p>
+          <Link className="btn btn-primary" href="/login">Go to Login</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Tech Mode</h1>
-        <Link href="/tech/jobs" className="btn">All My Jobs</Link>
+        <h1 className="text-2xl font-semibold">Technician Mode</h1>
+        <Link href="/service/new" className="btn">New Work Order</Link>
       </div>
 
-      {!user ? (
-        <div className="rounded-xl border p-6 text-sm">
-          You’re not signed in. <Link href="/login" className="underline">Log in</Link> to see assigned work.
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="card p-6">
+          <h3 className="font-medium mb-3">My Jobs</h3>
+          {jobsLoading ? (
+            <p>Loading…</p>
+          ) : jobs.length === 0 ? (
+            <p className="text-sm text-zinc-500">No assigned jobs.</p>
+          ) : (
+            <ul className="space-y-2">
+              {jobs.map((wo) => (
+                <li key={wo.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">{wo.id}</p>
+                    <p className="text-xs text-zinc-500 capitalize">{wo.status?.replace("_", " ")}</p>
+                  </div>
+                  <Link href={`/service/${wo.id}`} className="btn">Open</Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      ) : error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
-      ) : jobs === null ? (
-        <div className="text-sm text-zinc-600">Loading…</div>
-      ) : jobs.length === 0 ? (
-        <div className="rounded-xl border p-8 text-center text-sm text-zinc-500">
-          No jobs assigned. Go to <Link href="/service" className="underline">Service Board</Link> or open a WO and “Assign to me”.
+
+        <div className="card p-6">
+          <h3 className="font-medium mb-3">Clock</h3>
+          <TechTimer />
         </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {jobs.slice(0, 6).map(wo => (
-            <Link key={wo.id} href={`/tech/jobs/${wo.id}`} className="card p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">WO #{wo.id.slice(-6)}</div>
-                <div className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs capitalize">{wo.status}</div>
-              </div>
-              <div className="mt-2 line-clamp-2 text-sm text-zinc-700">{wo.concern || "—"}</div>
-              <div className="mt-2 text-xs text-zinc-500">{wo.customer?.name || "—"}</div>
-            </Link>
-          ))}
+
+        <div className="card p-6">
+          <h3 className="font-medium mb-3">Quick Actions</h3>
+          <div className="grid gap-2">
+            <Link href="/inventory" className="btn">Scan / Lookup Cart</Link>
+            <Link href="/parts" className="btn">Find Part</Link>
+            <Link href="/service" className="btn">Service Board</Link>
+          </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function TechTimer() {
+  const [running, setRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [running]);
+
+  const hh = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
+
+  return (
+    <div className="space-y-3">
+      <div className="text-3xl font-mono">{hh}:{mm}:{ss}</div>
+      <div className="flex gap-2">
+        <button className="btn btn-primary" onClick={() => setRunning((r) => !r)}>
+          {running ? "Pause" : "Start"}
+        </button>
+        <button className="btn" onClick={() => { setRunning(false); setElapsed(0); }}>
+          Reset
+        </button>
+      </div>
+      <p className="text-xs text-zinc-500">Local timer for quick tracking. Log time on the work order to save.</p>
     </div>
   );
 }
